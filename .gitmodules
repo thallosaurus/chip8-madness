@@ -1,0 +1,6 @@
+[submodule "chip8-test-rom"]
+	path = chip8-test-rom
+	url = https://github.com/corax89/chip8-test-rom.git
+[submodule "chip8-roms"]
+	path = chip8-roms
+	url = https://github.com/loktar00/chip8.git
