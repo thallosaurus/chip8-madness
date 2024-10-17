@@ -132,3 +132,13 @@ impl Chip8Display {
 fn xy_to_i(x: u8, y: u8) -> usize {
     (y as u16 * DISPLAY_WIDTH as u16 + x as u16).into()
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::display::xy_to_i;
+
+    #[test]
+    fn test_xy_to_i() {
+        assert_eq!(65, xy_to_i(1, 1))
+    }
+}
