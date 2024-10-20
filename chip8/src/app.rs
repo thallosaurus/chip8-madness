@@ -1,13 +1,16 @@
+use core::cell::RefCell;
+
 use crate::{
     chip8::{
         self,
-        ch8_types::{self, MemoryAddress, Registers, Stack, DISPLAY_HEIGHT, DISPLAY_WIDTH, REGISTER_SIZE, STACK_SIZE},
+        ch8_types::{self, MemoryAddress, Registers, Stack, DISPLAY_HEIGHT, DISPLAY_WIDTH, REGISTER_SIZE, STACK_SIZE, VRAM},
         Ops,
     },
-    display::{self, Chip8Display, FONT},
+    display::{self, DisplayController, FONT},
     memory::Memory,
 };
 
+/// Holds the State of the emulator
 /// CHIP-8 has the following components:
 /// - Memory: CHIP-8 has direct access to up to 4 kilobytes of RAM
 /// - Display: 64 x 32 pixels (or 128 x 64 for SUPER-CHIP) monochrome, ie. black or white
@@ -25,7 +28,7 @@ pub struct AppState {
     registers: Registers,
     memory: Memory,
     stack: Stack,
-    pub display: Chip8Display,
+    pub vram: VRAM,
 }
 
 impl AppState {
@@ -42,7 +45,8 @@ impl AppState {
             registers: [0; REGISTER_SIZE],
             memory: memory,
             stack: [0; STACK_SIZE],
-            display: Chip8Display::default(),
+            vram: [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
+            //display: Chip8Display::default(),
         }
     }
 
@@ -64,13 +68,13 @@ impl AppState {
         self.exec_op(instr);
     }
 
-    pub fn display_iter(self) -> Chip8Display {
-        self.display.into_iter()
-    }
-
     fn exec_op(&mut self, i: Ops) {
+        //let display = self.getVramController();
+        let display = DisplayController {};
+        let mem = RefCell::new(&mut self.vram);
+        
         match i {
-            Ops::CLS => self.display.clear(),
+            Ops::CLS => display.clear_vram(*mem.borrow_mut()),
             Ops::RET => {
                 let v = self.stack_pop();
                 self.pc = v as usize;
@@ -91,13 +95,17 @@ impl AppState {
                 let (x, y) = (self.registers[rx] % (DISPLAY_WIDTH as u8), self.registers[ry] % (DISPLAY_HEIGHT as u8));
                 
                 self.registers[0xF] = 0;
+
+                //self.registers[0xF] = display.draw_onto(*mem.borrow_mut(), x, y, n);
                 
                 let mut i = 0;
-                
                 while i < n {
+                    // get sprite data from loaded memory
                     let a = self.I + (i as u16);
                     let data = self.memory.get_u8(a.into());
-                    self.registers[0xF] = self.display.draw(x, y, *data);
+
+                    // transfer sprite to vram
+                    self.registers[0xF] = display.draw_onto(*mem.borrow_mut(), x as usize, y as usize, *data);
                     i += 1;
                 }
             },

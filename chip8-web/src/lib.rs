@@ -2,7 +2,7 @@ mod utils;
 
 use core::str;
 
-use chip8::app::AppState;
+use chip8::{app::AppState, chip8::ch8_types::DISPLAY_WIDTH, display::DisplayController};
 use wasm_bindgen::prelude::*;
 
 pub const IBM_LOGO: &[u8] = include_bytes!("../../chip8-roms/roms/IBM Logo.ch8");
@@ -38,29 +38,53 @@ impl Chip8JsController {
     }
     
     #[wasm_bindgen]
-    pub fn get_output(self) -> Vec<String>{
-
-        //expect("No runtime loaded");
-        let data: Vec<String> = self.state.display_iter().map(|f| {
-            match f {
-                chip8::display::DisplayStates::On => {
-                    String::from("X")
-                },
-                chip8::display::DisplayStates::Off => {
-                    String::from("_")
-                },
-                chip8::display::DisplayStates::NewLine => {
-                    String::from("\r")
-                },
-            }
+    pub fn get_output(&self) -> Vec<String>{
+        let data: Vec<String> = self.state.vram.iter().map(|f|{
+            row_to_string(f)
         }).collect();
     
         data
     }
 }
 
+pub fn row_to_string(o: &[bool; DISPLAY_WIDTH]) -> String {
+    let mut s = String::new();
+
+    let mut i = 7;
+    while i < o.len() {
+        s.push(if o[i] {
+            'X'
+        } else {
+            ' '
+        });
+        i += 1;
+    }
+
+    s.push('\n');
+
+    s
+}
+
 #[wasm_bindgen]
 pub fn init_rt() -> JsValue {
     utils::set_panic_hook();
     Chip8JsController::new(IBM_LOGO).into()
+}
+
+#[cfg(test)]
+mod tests {
+    use chip8::{chip8::ch8_types::{DISPLAY_HEIGHT, DISPLAY_WIDTH}, display::DisplayController};
+
+    use crate::row_to_string;
+
+
+    #[test]
+    fn test_row_to_string() {
+        let mut mem = [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT];
+
+        let controller = DisplayController {};
+
+        controller.draw_onto(&mut mem, 0, 0, 0b11001100);
+        assert_eq!(String::from("XX  XX  "), row_to_string(&mem[0]))
+    }
 }

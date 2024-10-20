@@ -4,3 +4,6 @@
 [submodule "chip8-roms"]
 	path = chip8-roms
 	url = https://github.com/loktar00/chip8.git
+[submodule "chip8-js"]
+	path = chip8-js
+	url = https://github.com/taniarascia/chip8.git

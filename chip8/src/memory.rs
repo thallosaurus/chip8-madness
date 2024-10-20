@@ -1,4 +1,4 @@
-use crate::{chip8::ch8_types::{self, MEMORY_SIZE}, display::FONT};
+use crate::chip8::ch8_types::{self, MEMORY_SIZE};
 pub struct Memory {
     memory: ch8_types::Memory,
 }
@@ -36,6 +36,7 @@ mod tests {
     use crate::display::FONT;
     use super::Memory;
 
+    /// Tests if the address loading is working
     #[test]
     fn load_at_address() {
         let mut mem = Memory::default();

@@ -24,8 +24,9 @@ pub mod ch8_types {
     /// Represents a 12-bit immediate memory address - 0xFFF
     pub type MemoryAddress = u16;
     const MEMORY_ADDRESS_MASK: u16 = 0xFFF;
+    
+    pub type VRAM = [[bool; DISPLAY_WIDTH]; DISPLAY_HEIGHT];
 
-    pub type VRAM = [bool; DISPLAY_HEIGHT * DISPLAY_WIDTH];
     pub type Registers = [Byte; REGISTER_SIZE];
     pub type Memory = [Byte; MEMORY_SIZE];
     pub type Stack = [MemoryAddress; STACK_SIZE];
@@ -41,15 +42,10 @@ pub mod ch8_types {
     pub fn decode_nibble(value: u16) -> Nibble {
         decode(value, NIBBLE_MASK) as u8
     }
-
-    /// VIDEO
-    pub trait Chip8DisplayOutput {
-        fn clear();
-        fn draw();
-    }
 }
 
 /// https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
+/// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
 #[derive(PartialEq, Debug)]
 pub enum Ops {
     /// 00E0 - CLS

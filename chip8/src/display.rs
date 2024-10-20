@@ -30,115 +30,95 @@ pub const FONT: [u8; 0x50] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
-#[derive(Clone, Copy)]
-pub struct Chip8Display {
-    pub vram: VRAM,
-    x: u8,
-    y: u8,
-}
+/// Struct responsible for translation of the memory to string
+pub struct DisplayController;
 
-impl Default for Chip8Display {
-    fn default() -> Self {
-        Self {
-            vram: [false; DISPLAY_WIDTH * DISPLAY_HEIGHT],
-            x: 0,
-            y: 0,
+impl DisplayController {
+    pub fn clear_vram(&self, obj: &mut VRAM) {
+        *obj = [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT];
+    }
+
+    pub fn draw_onto(&self, obj: &mut VRAM, x: usize, y: usize, data: u8) -> u8 {
+        let mut changed = false;
+        //let index = global_xy_to_i(x, y);
+
+        //let offset = index as u8 % 8;
+
+        let mut x: usize = x.into();
+
+        let mut i: u8 = 7;
+        while i != 0 {
+            
+            let bitselect: u8 = 1 << i;
+            let d = (data & bitselect) > 0;
+
+            changed = obj[y as usize][x] & d;
+
+            obj[y as usize][x] ^= d;
+
+            x += 1;
+            i -= 1;
         }
+
+        if changed { 1 } else { 0 }
     }
 }
 
-impl Iterator for Chip8Display {
-    type Item = DisplayStates;
+pub trait Displayable {
+    /// Clears the VRAM
+    fn clear(&mut self);
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let i = xy_to_i(self.x, self.y);
-
-        if i == self.vram.len() {
-            return None
-        }
-        
-        if self.x > (DISPLAY_WIDTH as u8) {
-            self.y += 1;
-            self.x = 0;
-            return Some(DisplayStates::NewLine)
-        } else {
-            self.x += 1;
-        }
-
-        if self.vram[i] {
-            Some(DisplayStates::On)
-        } else {
-            Some(DisplayStates::Off)
-        }
-    }
+    /// Draws onto the memory VRAM Area
+    fn draw(&mut self, x: u8, y: u8, data: u8) -> u8;
 }
 
-impl Chip8Display {
-    pub fn clear(&mut self) {
-        self.vram = [false; DISPLAY_WIDTH * DISPLAY_HEIGHT];
-    }
-
-    pub fn draw(&mut self, mut x: u8, mut y: u8, data: u8) -> u8{
-        let mut i = 0;
-
-        let mut changed = 0;
-
-        while i < 8 {
-            if x + i > DISPLAY_WIDTH as u8 {
-                y += 1;
-                x = 0;
-            }
-
-            let bit = data & (1 << i) > 0;
-            let index = xy_to_i(x, y);
-
-
-            let state_before = self.vram[index];
-            let state_after = state_before ^ bit;
-            self.vram[index] ^= bit;
-
-            if state_before && !state_after && changed != 1 {
-                changed = 1;
-            }
-
-            i += 1;
-        }
-
-        changed
-    }
-
-    pub fn as_bytes(&self) -> VRAM {
-        self.vram
-    }
-
-    pub fn as_str(&self) -> [u8; DISPLAY_WIDTH * DISPLAY_HEIGHT + (DISPLAY_HEIGHT)] {
-        let mut data: [u8; DISPLAY_WIDTH * DISPLAY_HEIGHT + (DISPLAY_HEIGHT)] =
-            [PIXEL_OFF; DISPLAY_WIDTH * DISPLAY_HEIGHT + (DISPLAY_HEIGHT)];
-
-        let mut i = 0;
-        while i < self.vram.len() {
-            if i > 0 && (i % DISPLAY_WIDTH == 0) {
-                data[i] = NEWLINE;
-            } else {
-                data[i] = if self.vram[i] { PIXEL_OFF } else { PIXEL_ON };
-            }
-            i += 1;
-        }
-
-        data
-    }
+fn global_xy_to_i(x: u8, y: u8) -> usize {
+    xy_to_i(x, y, DISPLAY_WIDTH as u16)
 }
 
-fn xy_to_i(x: u8, y: u8) -> usize {
-    (y as u16 * DISPLAY_WIDTH as u16 + x as u16).into()
+fn xy_to_i(x: u8, y: u8, width: u16) -> usize {
+    (y as u16 * width + x as u16).into()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::display::xy_to_i;
+    use core::cell::RefCell;
+
+    use crate::{chip8::ch8_types::{DISPLAY_HEIGHT, DISPLAY_WIDTH, VRAM}, display::{global_xy_to_i, xy_to_i}};
+
+    use super::DisplayController;
+
+    #[test]
+    fn test_global_xy_to_i() {
+        assert_eq!(65, global_xy_to_i(1, 1))
+    }
 
     #[test]
     fn test_xy_to_i() {
-        assert_eq!(65, xy_to_i(1, 1))
+        assert_eq!(10, xy_to_i(2, 2, 4))
+    }
+
+    #[test]
+    fn draw_onto() {
+        let mut mem: VRAM = [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT];
+
+        //let rc = &mut mem;
+
+        let controller = DisplayController {};
+        controller.draw_onto(&mut mem, 0, 0, 0b11001100);
+
+        assert_eq!(mem[0][0..8], [false, true, true, false, false, true, true, false])
+    }
+
+    #[test]
+    fn offset_draw_onto() {
+        let mut mem: VRAM = [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT];
+
+        //let rc = &mut mem;
+
+        let controller = DisplayController {};
+        controller.draw_onto(&mut mem, 2, 0, 0b11000000);
+
+        assert_eq!(mem[0][0..8], [false, false, true, true, false, false, false, false])
     }
 }
