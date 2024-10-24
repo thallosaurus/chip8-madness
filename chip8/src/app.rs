@@ -126,6 +126,32 @@ impl AppState {
 
             // Arbitrary, unhandled Data, possibly unimplemented opcode
             Ops::Data(data) => panic!("Tried executing unhandled opcode, data@{}pc: {:?}", self.pc, data),
+            Ops::SI(_, _) => todo!(),
+            Ops::SIN(_, _) => todo!(),
+            Ops::SVI(_, _) => todo!(),
+            Ops::SIV(_, _) => todo!(),
+            Ops::ORV(_, _) => todo!(),
+            Ops::ANDV(_, _) => todo!(),
+            Ops::XORV(_, _) => todo!(),
+            Ops::ADDVC(_, _) => todo!(),
+            Ops::SUBVC(_, _) => todo!(),
+            Ops::SHR(_, _) => todo!(),
+            Ops::SUBN(_, _) => todo!(),
+            Ops::SHL(_, _) => todo!(),
+            Ops::SNE(_, _) => todo!(),
+            Ops::JPV(_) => todo!(),
+            Ops::RND(_, _) => todo!(),
+            Ops::SKP(_) => todo!(),
+            Ops::SKNP(_) => todo!(),
+            Ops::LDDT(_) => todo!(),
+            Ops::LDK(_) => todo!(),
+            Ops::LDDTE(_) => todo!(),
+            Ops::LDST(_) => todo!(),
+            Ops::ADDI(_) => todo!(),
+            Ops::LDF(_) => todo!(),
+            Ops::LDB(_) => todo!(),
+            Ops::LDI(_) => todo!(),
+            Ops::LDVI(_) => todo!(),
         }
 
         self.pc += 2;
@@ -143,4 +169,17 @@ mod tests {
 
         appstate.step();
     }
+
+    #[test]
+    fn test_ibm_logo() {
+        let prg = include_bytes!("../../chip8-roms/roms/IBM Logo.ch8");
+        let mut appstate = AppState::new(prg);
+
+        let mut i = 0;
+        while i < 20 {
+            appstate.step();
+            i += 1;
+        }
+    }
+
 }
