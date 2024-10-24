@@ -19,7 +19,7 @@ fn run() {
         update_canvas(&rt.vram);
 
         let dbg_str = format!("[DEBUG] OP: {:?}, PC: {}, I: {}, SP: {}", inst, rt.pc, rt.I, rt.sp);
-        
+
         #[cfg(debug_assertions)]
         console::log_1(&JsValue::from_str(&dbg_str));
     });

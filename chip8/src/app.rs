@@ -123,35 +123,94 @@ impl AppState {
             Ops::SET_I(addr) => {
                 self.I = addr;
             }
+            
+            Ops::SYS(addr) => todo!(),
+            Ops::SI(rx, data) => {
+                if self.registers[rx] == data {
+                    self.pc += 2;
+                }
+            },
+            Ops::SIN(rx, data) => {
+                if self.registers[rx] != data {
+                    self.pc += 2;
+                }
+
+            },
+            Ops::SVI(rx, ry) => {
+                if self.registers[rx] == self.registers[ry] {
+                    self.pc += 2;
+                }
+            },
+            Ops::SIV(rx, ry) => {
+                self.registers[rx] = self.registers[ry];
+            },
+            Ops::ORV(rx, ry) => {
+                self.registers[rx] |= self.registers[ry];
+            },
+            Ops::ANDV(rx, ry) => {
+                self.registers[rx] &= self.registers[ry];
+            },
+            Ops::XORV(rx, ry) => {
+                self.registers[rx] ^= self.registers[ry];
+            },
+            Ops::ADDVC(rx, ry) => {
+                self.registers[rx] += self.registers[ry];
+            },
+            Ops::SUBVC(rx, ry) => {
+                self.registers[rx] -= self.registers[ry];
+            },
+            Ops::SHR(rx, ry) => {
+                todo!()
+            },
+            Ops::SUBN(rx, ry) => todo!(),
+            Ops::SHL(rx, ry) => todo!(),
+            Ops::SNE(rx, ry) => {
+                if self.registers[rx] != self.registers[ry] {
+                    self.pc += 2;
+                }
+            },
+            Ops::JPV(addr) => {
+                self.pc = (self.registers[0] as usize) + (addr as usize);
+            },
+            Ops::RND(rx, data) => {
+                // TODO: Random Number Generator
+                todo!()
+            },
+            Ops::SKP(rx) => {
+                // TODO: Keyboard Input
+            },
+            Ops::SKNP(rx) => todo!(),
+            Ops::LDDT(rx) => todo!(),
+            Ops::LDK(rx) => todo!(),
+            Ops::LDDTE(rx) => todo!(),
+            Ops::LDST(rx) => todo!(),
+            Ops::ADDI(rx) => {
+                self.I = self.I + self.registers[rx] as u16
+            },
+            Ops::LDF(rx) => {
+                self.I = self.registers[rx] as u16
+            },
+            Ops::LDB(rx) => todo!(),
+            Ops::LDI(rx) => {
+                let mut i = 0;
+                while i < rx {
+                    let p = self.memory.get_u8(self.I.into());
+                    *p = self.registers[i];
+                    i += 1;
+                }
+            },
+            Ops::LDVI(rx) => {
+                let mut i = 0;
+                while i < rx {
+                    let p = self.memory.get_u8(self.I.into());
+                    //*p = self.registers[i];
+                    self.registers[i] = *p;
+                    i += 1;
+                }
+            },
 
             // Arbitrary, unhandled Data, possibly unimplemented opcode
             Ops::Data(data) => panic!("Tried executing unhandled opcode, data@{}pc: {:?}", self.pc, data),
-            Ops::SI(_, _) => todo!(),
-            Ops::SIN(_, _) => todo!(),
-            Ops::SVI(_, _) => todo!(),
-            Ops::SIV(_, _) => todo!(),
-            Ops::ORV(_, _) => todo!(),
-            Ops::ANDV(_, _) => todo!(),
-            Ops::XORV(_, _) => todo!(),
-            Ops::ADDVC(_, _) => todo!(),
-            Ops::SUBVC(_, _) => todo!(),
-            Ops::SHR(_, _) => todo!(),
-            Ops::SUBN(_, _) => todo!(),
-            Ops::SHL(_, _) => todo!(),
-            Ops::SNE(_, _) => todo!(),
-            Ops::JPV(_) => todo!(),
-            Ops::RND(_, _) => todo!(),
-            Ops::SKP(_) => todo!(),
-            Ops::SKNP(_) => todo!(),
-            Ops::LDDT(_) => todo!(),
-            Ops::LDK(_) => todo!(),
-            Ops::LDDTE(_) => todo!(),
-            Ops::LDST(_) => todo!(),
-            Ops::ADDI(_) => todo!(),
-            Ops::LDF(_) => todo!(),
-            Ops::LDB(_) => todo!(),
-            Ops::LDI(_) => todo!(),
-            Ops::LDVI(_) => todo!(),
         }
 
         self.pc += 2;

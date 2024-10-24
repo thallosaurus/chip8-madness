@@ -104,7 +104,7 @@ pub enum Ops {
     /// Jump to a machine code routine at nnn.
     ///
     /// This instruction is only used on the old computers on which Chip-8 was originally implemented. It is ignored by modern interpreters.
-    // SYS,
+    SYS(ch8_types::MemoryAddress),
 
     /// 3xkk - SE Vx, byte
     /// Skip next instruction if Vx = kk.
@@ -276,6 +276,10 @@ impl From<[u8; 2]> for Ops {
             _ => {
                 let instr = decode(value, 0xF000) >> 12;
                 match instr {
+                    0x0 => {
+                        let data = decode_memory_address(value);
+                        Self::SYS(data)
+                    }
                     0x1 => {
                         let data = decode_memory_address(value);
                         Self::JP(data)
