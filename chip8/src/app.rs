@@ -3,7 +3,7 @@ use core::cell::RefCell;
 use crate::{
     chip8::{
         self,
-        ch8_types::{self, MemoryAddress, Registers, Stack, DISPLAY_HEIGHT, DISPLAY_WIDTH, REGISTER_SIZE, STACK_SIZE, VRAM},
+        ch8_types::{self, MemoryAddress, Registers, Stack, Timer, DISPLAY_HEIGHT, DISPLAY_WIDTH, REGISTER_SIZE, STACK_SIZE, VRAM},
         Ops,
     },
     display::{self, DisplayController, FONT},
@@ -30,6 +30,8 @@ pub struct AppState {
     memory: Memory,
     stack: Stack,
     pub vram: VRAM,
+    dt: Timer,
+    st: Timer,
 }
 
 impl AppState {
@@ -47,6 +49,8 @@ impl AppState {
             memory: memory,
             stack: [0; STACK_SIZE],
             vram: [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
+            dt: 0,
+            st: 0,
             //display: Chip8Display::default(),
         }
     }
@@ -162,8 +166,16 @@ impl AppState {
             Ops::SHR(rx, ry) => {
                 todo!()
             },
-            Ops::SUBN(rx, ry) => todo!(),
             Ops::SHL(rx, ry) => todo!(),
+            Ops::SUBN(rx, ry) => {
+                self.registers[0xF] = if self.registers[ry] > self.registers[rx] {
+                    1
+                } else {
+                    0
+                };
+
+                self.registers[rx] = self.registers[ry] - self.registers[rx];
+            },
             Ops::SNE(rx, ry) => {
                 if self.registers[rx] != self.registers[ry] {
                     self.pc += 2;
@@ -180,10 +192,16 @@ impl AppState {
                 // TODO: Keyboard Input
             },
             Ops::SKNP(rx) => todo!(),
-            Ops::LDDT(rx) => todo!(),
+            Ops::LDDT(rx) => {
+                self.registers[rx] = self.dt;
+            },
             Ops::LDK(rx) => todo!(),
-            Ops::LDDTE(rx) => todo!(),
-            Ops::LDST(rx) => todo!(),
+            Ops::LDDTE(rx) => {
+                self.dt = self.registers[rx];
+            },
+            Ops::LDST(rx) => {
+                self.st = self.registers[rx]
+            },
             Ops::ADDI(rx) => {
                 self.I = self.I + self.registers[rx] as u16
             },
@@ -214,6 +232,21 @@ impl AppState {
         }
 
         self.pc += 2;
+    }
+
+    /// Decrements Sound and Delay Timers
+    /// 
+    /// Independently update the timers from outside
+    fn dec_timers(&mut self) {
+        // Decrement Delay Timer
+        if self.dt > 0 {
+            self.dt -= 1;
+        }
+
+        // Decrement Sound Timer
+        if self.st > 0 {
+            self.st -= 1;
+        }
     }
 }
 

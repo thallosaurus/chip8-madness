@@ -31,6 +31,8 @@ pub mod ch8_types {
     pub type Memory = [Byte; MEMORY_SIZE];
     pub type Stack = [MemoryAddress; STACK_SIZE];
 
+    pub type Timer = u8;
+
     pub fn decode(i: u16, mask: u16) -> u16 {
         i & mask
     }
