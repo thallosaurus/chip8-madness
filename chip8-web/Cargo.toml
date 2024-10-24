@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-wasm-bindgen = "0.2.84"
+wasm-bindgen = { version = "0.2.84" }
 chip8 = { path = "../chip8" }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
@@ -19,6 +19,7 @@ chip8 = { path = "../chip8" }
 # all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
+web-sys = { version = "0.3.72", features = ["console", "Window", "Document", "Element", "HtmlCanvasElement", "CanvasRenderingContext2d"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"
@@ -26,3 +27,4 @@ wasm-bindgen-test = "0.3.34"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+debug = true

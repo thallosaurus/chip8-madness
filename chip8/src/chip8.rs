@@ -46,7 +46,7 @@ pub mod ch8_types {
 
 /// https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
 /// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Ops {
     /// 00E0 - CLS
     /// Clear the display.

@@ -46,21 +46,21 @@ impl DisplayController {
 
         let mut x: usize = x.into();
 
-        let mut i: u8 = 7;
-        while i != 0 {
-            
-            let bitselect: u8 = 1 << i;
+        let mut pos: u8 = 0;
+        while pos != 8 {
+            let bitselect: u8 = 1 << 7 - pos;
             let d = (data & bitselect) > 0;
 
-            changed = obj[y as usize][x] & d;
+            changed = obj[y][x] & d;
 
-            obj[y as usize][x] ^= d;
+            obj[y][x] ^= d;
 
             x += 1;
-            i -= 1;
+            pos += 1;
         }
 
-        if changed { 1 } else { 0 }
+        //        if changed { 1 } else { 0 }
+        1
     }
 }
 
@@ -82,9 +82,10 @@ fn xy_to_i(x: u8, y: u8, width: u16) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use core::cell::RefCell;
-
-    use crate::{chip8::ch8_types::{DISPLAY_HEIGHT, DISPLAY_WIDTH, VRAM}, display::{global_xy_to_i, xy_to_i}};
+    use crate::{
+        chip8::ch8_types::{DISPLAY_HEIGHT, DISPLAY_WIDTH, VRAM},
+        display::{global_xy_to_i, xy_to_i},
+    };
 
     use super::DisplayController;
 
@@ -107,18 +108,39 @@ mod tests {
         let controller = DisplayController {};
         controller.draw_onto(&mut mem, 0, 0, 0b11001100);
 
-        assert_eq!(mem[0][0..8], [false, true, true, false, false, true, true, false])
+        assert_eq!(
+            mem[0][0..8],
+            [false, true, true, false, false, true, true, false]
+        )
     }
 
+    /// With this we test if we can successfully write to our VRAM Array
+    /// First we draw the specified Bitmask onto the Buffer with the specified offset
+    /// Then we check if the data got written correctly
     #[test]
     fn offset_draw_onto() {
         let mut mem: VRAM = [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT];
 
-        //let rc = &mut mem;
-
         let controller = DisplayController {};
         controller.draw_onto(&mut mem, 2, 0, 0b11000000);
 
-        assert_eq!(mem[0][0..8], [false, false, true, true, false, false, false, false])
+        assert_eq!(
+            mem[0][0..8],
+            [false, false, true, true, false, false, false, false]
+        )
+    }
+
+    /// Same check as [offset_draw_onto], but with a Y-Offset
+    #[test]
+    fn offset_draw_onto_y() {
+        let mut mem: VRAM = [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT];
+
+        let controller = DisplayController {};
+        controller.draw_onto(&mut mem, 2, 1, 0b11000000);
+
+        assert_eq!(
+            mem[1][0..8],
+            [false, false, true, true, false, false, false, false]
+        )
     }
 }

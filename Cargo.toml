@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "arduino", "chip8", "chip8-std", "chip8-web"
+    "chip8", "chip8-web"
 ]
 
 # Configure the build for minimal size - AVRs have very little program memory

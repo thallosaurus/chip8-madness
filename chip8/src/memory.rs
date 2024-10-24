@@ -1,4 +1,6 @@
 use crate::chip8::ch8_types::{self, MEMORY_SIZE};
+
+#[derive(Debug)]
 pub struct Memory {
     memory: ch8_types::Memory,
 }

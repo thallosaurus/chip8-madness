@@ -21,10 +21,11 @@ use crate::{
 /// - An 8-bit sound timer which functions like the delay timer, but which also gives off a beeping sound as long as it’s not 0
 /// - 16 8-bit (one byte) general-purpose variable registers numbered 0 through F hexadecimal, ie. 0 through 15 in decimal, called V0 through VF
 ///     - VF is also used as a flag register; many instructions will set it to either 1 or 0 based on some rule, for example using it as a carry flag
+#[derive(Debug)]
 pub struct AppState {
-    pc: usize,
-    sp: usize,
-    I: u16,
+    pub pc: usize,
+    pub sp: usize,
+    pub I: u16,
     registers: Registers,
     memory: Memory,
     stack: Stack,
@@ -63,11 +64,15 @@ impl AppState {
         value
     }
 
-    pub fn step(&mut self) {
+    /// Execute next instruction
+    /// Returns the Opcode for Debug Purposes
+    pub fn step(&mut self) -> Ops {
         let instr: Ops = self.memory.get_instruction(self.pc).into();
-        self.exec_op(instr);
+        self.exec_op(instr.clone());
+        instr
     }
 
+    /// Executes the given Opcode
     fn exec_op(&mut self, i: Ops) {
         //let display = self.getVramController();
         let display = DisplayController {};
@@ -87,12 +92,12 @@ impl AppState {
             Ops::CALL(addr) => {
                 let v: u16 = self.pc.try_into().unwrap();
                 self.stack_push(v);
-
+                
                 self.pc = addr as usize;
                 return;
             }
             Ops::DRW(rx, ry, n) => {
-                let (x, y) = (self.registers[rx] % (DISPLAY_WIDTH as u8), self.registers[ry] % (DISPLAY_HEIGHT as u8));
+                let (x, y) = (self.registers[rx],  self.registers[ry]);
                 
                 self.registers[0xF] = 0;
 
@@ -105,7 +110,7 @@ impl AppState {
                     let data = self.memory.get_u8(a.into());
 
                     // transfer sprite to vram
-                    self.registers[0xF] = display.draw_onto(*mem.borrow_mut(), x as usize, y as usize, *data);
+                    self.registers[0xF] = display.draw_onto(*mem.borrow_mut(), x as usize, (y + i) as usize, *data);
                     i += 1;
                 }
             },
