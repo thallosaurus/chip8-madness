@@ -7,40 +7,23 @@
     <title>Document</title>
     <script type="module">
         import init from './pkg/chip8_web.js';
-
-        async function run() {
+        window.onload = async () => {
             await init();
-        }
-
-        async function run_() {
-            await init();
-            let d = display();
-
-            setInterval(() => {
-                let elem = document.querySelector("pre#output");
-                    const value = d.next().value;
-                    elem.innerText = value.join("");
-                }
-            , 100);
-
-        }
-
-        function* display() {
-            let rt = init_rt();
-            while (true) {
-                rt.step();
-                //debugger;
-                yield rt.get_output();
-            }
-        }
-
-        window.onload = run;
+        };
     </script>
+
+    <style>
+        #container {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
 </head>
 
 <body>
-    <pre id="output"></pre>
-    <canvas id="canvas" width="640px" height="320px" style="border: 1px solid black"></canvas>
+    <div id="container">
+        <canvas id="canvas" width="640px" height="320px" style="border: 1px solid black"></canvas>
+    </div>
 </body>
 
 </html>
