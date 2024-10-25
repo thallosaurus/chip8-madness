@@ -174,7 +174,7 @@ impl AppState {
                 } else {
                     0
                 };
-                self.registers[rx] /= 2;
+                self.registers[rx] = u8::wrapping_div(self.registers[rx], 2);
             },
             Ops::SHL(rx, ry) => {
                 self.registers[0xF] = if (self.registers[rx] & 0b10000000) >> 7 == 1 {
@@ -193,7 +193,7 @@ impl AppState {
                     0
                 };
 
-                self.registers[rx] = self.registers[ry] - self.registers[rx];
+                self.registers[rx] = u8::wrapping_sub(self.registers[ry], self.registers[rx]);
             },
             Ops::SNE(rx, ry) => {
                 if self.registers[rx] != self.registers[ry] {
@@ -256,16 +256,16 @@ impl AppState {
             },
             Ops::LDI(rx) => {
                 let mut i = 0;
-                while i < rx {
-                    let p = self.memory.get_u8(self.I.into());
+                while i <= rx {
+                    let p = self.memory.get_u8((self.I + i as u16).into());
                     *p = self.registers[i];
                     i += 1;
                 }
             },
             Ops::LDVI(rx) => {
                 let mut i = 0;
-                while i < rx {
-                    let p = self.memory.get_u8(self.I.into());
+                while i <= rx {
+                    let p = self.memory.get_u8((self.I + i as u16).into());
                     //*p = self.registers[i];
                     self.registers[i] = *p;
                     i += 1;
