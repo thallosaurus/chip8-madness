@@ -1,9 +1,11 @@
 use core::cell::RefCell;
 
+use rand::{rngs::SmallRng, RngCore, SeedableRng};
+
 use crate::{
     chip8::{
         self,
-        ch8_types::{self, MemoryAddress, Registers, Stack, Timer, DISPLAY_HEIGHT, DISPLAY_WIDTH, REGISTER_SIZE, STACK_SIZE, VRAM},
+        ch8_types::{self, InputKey, MemoryAddress, Registers, Stack, Timer, DISPLAY_HEIGHT, DISPLAY_WIDTH, REGISTER_SIZE, STACK_SIZE, VRAM},
         Ops,
     },
     display::{self, DisplayController, FONT},
@@ -32,6 +34,7 @@ pub struct AppState {
     pub vram: VRAM,
     dt: Timer,
     st: Timer,
+    key_buffer: Option<InputKey>,
 }
 
 impl AppState {
@@ -51,33 +54,36 @@ impl AppState {
             vram: [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
             dt: 0,
             st: 0,
+            key_buffer: None
             //display: Chip8Display::default(),
         }
     }
 
     fn reset(&mut self) {}
 
+    pub fn get_stack(&self) -> &Stack {
+        &self.stack
+    }
+
     fn stack_push(&mut self, value: MemoryAddress) {
         self.stack[self.sp] = value;
         self.sp += 1;
     }
-
+    
     fn stack_pop(&mut self) -> MemoryAddress {
-        let value = self.stack[self.sp];
         self.sp -= 1;
-        value
+        self.stack[self.sp]
     }
 
     /// Execute next instruction
     /// Returns the Opcode for Debug Purposes
-    pub fn step(&mut self) -> Ops {
+    pub fn step(&mut self) -> Result<Ops, u16> {
         let instr: Ops = self.memory.get_instruction(self.pc).into();
-        self.exec_op(instr.clone());
-        instr
+        self.exec_op(instr.clone())
     }
 
     /// Executes the given Opcode
-    fn exec_op(&mut self, i: Ops) {
+    fn exec_op(&mut self, i: Ops) -> Result<Ops, u16>{
         //let display = self.getVramController();
         let display = DisplayController {};
         let mem = RefCell::new(&mut self.vram);
@@ -87,25 +93,22 @@ impl AppState {
             Ops::RET => {
                 let v = self.stack_pop();
                 self.pc = v as usize;
-                return;
             }
             Ops::JP(addr) => {
                 self.pc = addr as usize;
-                return;
+                return Ok(i);
             }
             Ops::CALL(addr) => {
                 let v: u16 = self.pc.try_into().unwrap();
                 self.stack_push(v);
                 
                 self.pc = addr as usize;
-                return;
+                return Ok(i);
             }
             Ops::DRW(rx, ry, n) => {
                 let (x, y) = (self.registers[rx],  self.registers[ry]);
                 
                 self.registers[0xF] = 0;
-
-                //self.registers[0xF] = display.draw_onto(*mem.borrow_mut(), x, y, n);
                 
                 let mut i = 0;
                 while i < n {
@@ -122,13 +125,15 @@ impl AppState {
                 self.registers[rx] = data;
             }
             Ops::ADD_V(rx, data) => {
-                self.registers[rx] += data;
+                self.registers[rx] = u8::wrapping_add(self.registers[rx], data);
             }
             Ops::SET_I(addr) => {
                 self.I = addr;
             }
             
-            Ops::SYS(addr) => todo!(),
+            Ops::SYS(addr) => {
+                // Ignore
+            },
             Ops::SI(rx, data) => {
                 if self.registers[rx] == data {
                     self.pc += 2;
@@ -158,15 +163,29 @@ impl AppState {
                 self.registers[rx] ^= self.registers[ry];
             },
             Ops::ADDVC(rx, ry) => {
-                self.registers[rx] += self.registers[ry];
+                self.registers[rx] = u8::wrapping_add(self.registers[rx], self.registers[ry]);
             },
             Ops::SUBVC(rx, ry) => {
-                self.registers[rx] -= self.registers[ry];
+                self.registers[rx] = u8::wrapping_sub(self.registers[rx], self.registers[ry]);
             },
             Ops::SHR(rx, ry) => {
-                todo!()
+                self.registers[0xF] = if self.registers[rx] & 1 == 1 {
+                    1
+                } else {
+                    0
+                };
+                self.registers[rx] /= 2;
             },
-            Ops::SHL(rx, ry) => todo!(),
+            Ops::SHL(rx, ry) => {
+                self.registers[0xF] = if (self.registers[rx] & 0b10000000) >> 7 == 1 {
+                    1
+                } else {
+                    0
+                };
+
+                
+                self.registers[rx] = u8::wrapping_mul(self.registers[rx], 2);
+            },
             Ops::SUBN(rx, ry) => {
                 self.registers[0xF] = if self.registers[ry] > self.registers[rx] {
                     1
@@ -183,15 +202,30 @@ impl AppState {
             },
             Ops::JPV(addr) => {
                 self.pc = (self.registers[0] as usize) + (addr as usize);
+                return Ok(i)
             },
-            Ops::RND(rx, data) => {
-                // TODO: Random Number Generator
-                todo!()
+            Ops::RND(rx, data) => {                
+                let mut num = SmallRng::seed_from_u64(0x4567_u64);
+                let b = (num.next_u32() & 0xFF) as u8;
+                self.registers[rx] = b & data;
             },
+            // TODO: Test Keyboard Input
             Ops::SKP(rx) => {
-                // TODO: Keyboard Input
+                if let Some(k) = self.key_buffer {
+                    if k == self.registers[rx] {
+                        self.pc += 2;
+                    }
+                }
             },
-            Ops::SKNP(rx) => todo!(),
+
+            // TODO: Test Keyboard Input
+            Ops::SKNP(rx) => {
+                if let Some(k) = self.key_buffer {
+                    if k != self.registers[rx] {
+                        self.pc += 2;
+                    }
+                }
+            },
             Ops::LDDT(rx) => {
                 self.registers[rx] = self.dt;
             },
@@ -208,7 +242,18 @@ impl AppState {
             Ops::LDF(rx) => {
                 self.I = self.registers[rx] as u16
             },
-            Ops::LDB(rx) => todo!(),
+            Ops::LDB(rx) => {
+                let val = self.registers[rx];
+
+                let i = val / 100;
+                let ii = (val % 100) / 10;
+                let iii = val % 10;
+
+                *self.memory.get_u8(self.I.into()) = i;
+                *self.memory.get_u8((self.I + 1).into()) = ii;
+                *self.memory.get_u8((self.I + 2).into()) = iii;
+
+            },
             Ops::LDI(rx) => {
                 let mut i = 0;
                 while i < rx {
@@ -228,16 +273,20 @@ impl AppState {
             },
 
             // Arbitrary, unhandled Data, possibly unimplemented opcode
-            Ops::Data(data) => panic!("Tried executing unhandled opcode, data@{}pc: {:?}", self.pc, data),
+            Ops::INVALID(data) => {
+                //panic!("Tried executing unhandled opcode, data@ PC@{:#}: {:#}", self.pc, data)
+                return Err(data)
+            }
         }
 
         self.pc += 2;
+        Ok(i)
     }
 
     /// Decrements Sound and Delay Timers
     /// 
     /// Independently update the timers from outside
-    fn dec_timers(&mut self) {
+    pub fn dec_timers(&mut self) {
         // Decrement Delay Timer
         if self.dt > 0 {
             self.dt -= 1;

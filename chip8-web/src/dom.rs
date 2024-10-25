@@ -18,6 +18,18 @@ pub fn write_to_output_window(data: String) {
     elem.unwrap().set_inner_html(data.as_str());
 }
 
+pub fn set_timeout(f: &Closure<dyn FnMut()>, time: i32) {
+    window()
+        .set_timeout_with_callback_and_timeout_and_arguments_0(f.as_ref().unchecked_ref(), time)
+        .expect("should register `setTimeout` OK");
+}
+
+pub fn request_animation_frame(f: &Closure<dyn FnMut()>) -> i32 {
+    window()
+        .request_animation_frame(f.as_ref().unchecked_ref())
+        .expect("should register 'requestAnimationFrame' OK")
+}
+
 pub fn update_canvas(data: &VRAM) {
     let canvas = document().get_element_by_id("canvas").unwrap();
     let canvas: HtmlCanvasElement = canvas

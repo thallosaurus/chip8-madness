@@ -32,6 +32,7 @@ pub mod ch8_types {
     pub type Stack = [MemoryAddress; STACK_SIZE];
 
     pub type Timer = u8;
+    pub type InputKey = u8;
 
     pub fn decode(i: u16, mask: u16) -> u16 {
         i & mask
@@ -266,12 +267,11 @@ pub enum Ops {
     /// The interpreter reads values from memory starting at location I into registers V0 through Vx.
     LDVI(ch8_types::RegisterIndex),
     
-    Data(u16),
+    INVALID(u16),
 }
 
-impl From<[u8; 2]> for Ops {
-    fn from(v: [u8; 2]) -> Self {
-        let value = (v[0] as u16) << 8 | v[1] as u16;
+impl From<u16> for Ops {
+    fn from(value: u16) -> Self {
         match value {
             0x00E0 => Ops::CLS,
             0x00EE => Ops::RET,
@@ -358,7 +358,7 @@ impl From<[u8; 2]> for Ops {
                                 Self::SHL(x, y)
                             }
                             _ => {
-                                panic!("Opcode not defined: {}", instr)
+                                Self::INVALID(value)
                             }
                         }
                     }
@@ -386,7 +386,7 @@ impl From<[u8; 2]> for Ops {
                                 Self::SKNP(x)
                             }
                             _ => {
-                                panic!("Unknown Opcode")
+                                Self::INVALID(value)
                             }
                         }
                     }
@@ -421,14 +421,21 @@ impl From<[u8; 2]> for Ops {
                                 Self::LDVI(x)
                             }
                             _ => {
-                                panic!("Opcode not found: {}", instr)
+                                Self::INVALID(value)
                             }
                         }
                     }
-                    _ => todo!("Opcode not defined: {}", instr),
+                    _ => Self::INVALID(value),
                 }
             }
         }
+    }
+}
+
+impl From<[u8; 2]> for Ops {
+    fn from(v: [u8; 2]) -> Self {
+        let value = (v[0] as u16) << 8 | v[1] as u16;
+        value.into()
     }
 }
 

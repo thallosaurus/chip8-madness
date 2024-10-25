@@ -39,10 +39,7 @@ impl DisplayController {
     }
 
     pub fn draw_onto(&self, obj: &mut VRAM, x: usize, y: usize, data: u8) -> u8 {
-        let mut changed = false;
-        //let index = global_xy_to_i(x, y);
-
-        //let offset = index as u8 % 8;
+        let mut changed = 0;
 
         let mut x: usize = x.into();
 
@@ -51,16 +48,19 @@ impl DisplayController {
             let bitselect: u8 = 1 << 7 - pos;
             let d = (data & bitselect) > 0;
 
-            changed = obj[y][x] & d;
+            changed = if obj[y % DISPLAY_HEIGHT][x % DISPLAY_WIDTH] & d {
+                1
+            } else {
+                0
+            };
 
-            obj[y][x] ^= d;
+            obj[y % DISPLAY_HEIGHT][x % DISPLAY_WIDTH] ^= d;
 
             x += 1;
             pos += 1;
         }
 
-        //        if changed { 1 } else { 0 }
-        1
+        changed
     }
 }
 
@@ -110,7 +110,7 @@ mod tests {
 
         assert_eq!(
             mem[0][0..8],
-            [false, true, true, false, false, true, true, false]
+            [true, true, false, false, true, true, false, false]
         )
     }
 

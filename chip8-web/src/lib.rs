@@ -2,60 +2,166 @@ mod dom;
 mod utils;
 
 use core::str;
+use std::{cell::RefCell, rc::Rc};
 
-use chip8::{app::AppState, chip8::ch8_types::DISPLAY_WIDTH, display::DisplayController};
-use dom::{update_canvas, window};
+use chip8::{
+    app::AppState,
+    chip8::{
+        ch8_types::{DISPLAY_WIDTH, STACK_SIZE},
+        Ops,
+    },
+    display::DisplayController,
+};
+use dom::{request_animation_frame, set_timeout, update_canvas, window};
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 
-pub const IBM_LOGO: &[u8] = include_bytes!("../../chip8-roms/roms/IBM Logo.ch8");
+pub const IBM_LOGO: &[u8] = include_bytes!("../../chip8-roms/roms/Pong (alt).ch8");
 
 #[wasm_bindgen(start)]
 fn run() {
-    let mut rt = AppState::new(IBM_LOGO);
+    #[cfg(debug_assertions)]
+    utils::set_panic_hook();
+    let mut rt = Rc::new(RefCell::new(AppState::new(IBM_LOGO)));
 
-    let tick = Closure::<dyn FnMut()>::new(move || {
-        let inst = rt.step();
-        update_canvas(&rt.vram);
+    // js quirks
+    {
+        let f = Rc::new(RefCell::new(None));
+        let g = f.clone();
 
-        let dbg_str = format!("[DEBUG] OP: {:?}, PC: {}, I: {}, SP: {}", inst, rt.pc, rt.I, rt.sp);
+        let rt = rt.clone();
 
-        #[cfg(debug_assertions)]
-        console::log_1(&JsValue::from_str(&dbg_str));
-    });
+        *g.borrow_mut() = Some(Closure::new(move || {
+            let mut rt = rt.borrow_mut();
+            let inst = rt.step();
 
-    window()
-        .set_interval_with_callback_and_timeout_and_arguments_0(tick.as_ref().unchecked_ref(), 100)
-        .expect("error");
+            if let Err(data) = inst {
+                console::error_1(&JsValue::from_str(&format!("unknown opcode: {}", data)));
+                let o: Ops = data.into();
+                debug_output(&rt, &o);
+                return;
+            }
 
-    tick.forget();
+            
+            #[cfg(debug_assertions)]
+            debug_output(&rt, &inst.ok().unwrap());
+            
+            set_timeout(f.borrow().as_ref().unwrap(), 17);
+        }));
+        
+        set_timeout(g.borrow().as_ref().unwrap(), 17);
+        
+        //tick.forget();
+    }
+    
+    {
+        // animation frame
+        let f = Rc::new(RefCell::new(None));
+        let g = f.clone();
+        
+        let rt = rt.clone();
+
+        *g.borrow_mut() = Some(Closure::new(move || {
+            let mut rt = rt.borrow_mut();
+            update_canvas(&rt.vram);
+            rt.dec_timers();
+            request_animation_frame(f.borrow().as_ref().unwrap());
+        }));
+
+        request_animation_frame(g.borrow().as_ref().unwrap());
+    }
 }
 
-pub fn row_to_string(o: &[bool; DISPLAY_WIDTH]) -> String {
-    let mut s = String::new();
 
-    let mut i = 7;
-    while i < o.len() {
-        s.push(if o[i] { 'X' } else { '_' });
-        i += 1;
-    }
-
-    s.push('\n');
-
-    s
+fn debug_output(rt: &AppState, inst: &Ops) {
+    let dbg_str = format!(
+        "[DEBUG] OP: {:?}, PC: {}, I: {}, SP: {}\n\n{:?}",
+        inst,
+        rt.pc,
+        rt.I,
+        rt.sp,
+            rt.get_stack()
+    );
+    console::log_1(&JsValue::from_str(&dbg_str));
 }
 
 #[cfg(test)]
 mod tests {
     use chip8::{
+        app::AppState,
         chip8::ch8_types::{DISPLAY_HEIGHT, DISPLAY_WIDTH},
         display::DisplayController,
     };
 
-    use crate::row_to_string;
+    pub const IBM_LOGO: &[u8] = include_bytes!("../../chip8-roms/roms/IBM Logo.ch8");
+
+    pub fn row_to_string(o: &[bool; DISPLAY_WIDTH]) -> String {
+        let mut s = String::new();
+
+        let mut i = 7;
+        while i < o.len() {
+            s.push(if o[i] { '◼' } else { ' ' });
+            i += 1;
+        }
+
+        s.push('\n');
+
+        s
+    }
 
     #[test]
-    fn test_row_to_string() {
+    fn test_ibm_logo() {
+        let mut rt = AppState::new(IBM_LOGO);
+
+        let mut i = 0;
+
+        while i < 20 {
+            rt.step();
+            i += 1;
+        }
+
+        let o: Vec<String> = rt.vram.iter().map(|f| row_to_string(f)).collect();
+        let output = o.join("");
+
+        let eo = "_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_____XXXXXXXX_XXXXXXXXX___XXXXX_________XXXXX____________
+_________________________________________________________
+_____XXXXXXXX_XXXXXXXXXXX_XXXXXX_______XXXXXX____________
+_________________________________________________________
+_______XXXX_____XXX___XXX___XXXXX_____XXXXX______________
+_________________________________________________________
+_______XXXX_____XXXXXXX_____XXXXXXX_XXXXXXX______________
+_________________________________________________________
+_______XXXX_____XXXXXXX_____XXX_XXXXXXX_XXX______________
+_________________________________________________________
+_______XXXX_____XXX___XXX___XXX__XXXXX__XXX______________
+_________________________________________________________
+_____XXXXXXXX_XXXXXXXXXXX_XXXXX___XXX___XXXXX____________
+_________________________________________________________
+_____XXXXXXXX_XXXXXXXXX___XXXXX____X____XXXXX____________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+_________________________________________________________
+";
+
+        assert_eq!(output, eo);
+    }
+
+    #[test]
+    fn test_row_to_stringx() {
         let mut mem = [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT];
 
         let controller = DisplayController {};

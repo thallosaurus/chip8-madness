@@ -7,43 +7,6 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'arduino-chip8'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=arduino-chip8",
-                    "--package=arduino-chip8"
-                ],
-                "filter": {
-                    "name": "arduino-chip8",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'arduino-chip8'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=arduino-chip8",
-                    "--package=arduino-chip8"
-                ],
-                "filter": {
-                    "name": "arduino-chip8",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Debug unit tests in library 'chip8'",
             "cargo": {
                 "args": [
@@ -63,12 +26,49 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug executable 'sanity-test'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=sanity-test",
+                    "--package=chip8"
+                ],
+                "filter": {
+                    "name": "sanity-test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'sanity-test'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=sanity-test",
+                    "--package=chip8"
+                ],
+                "filter": {
+                    "name": "sanity-test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug executable 'chip8-std'",
             "cargo": {
                 "args": [
                     "build",
                     "--bin=chip8-std",
-                    "--package=chip8"
+                    "--package=chip8-std"
                 ],
                 "filter": {
                     "name": "chip8-std",
@@ -87,11 +87,49 @@
                     "test",
                     "--no-run",
                     "--bin=chip8-std",
-                    "--package=chip8"
+                    "--package=chip8-std"
                 ],
                 "filter": {
                     "name": "chip8-std",
                     "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'chip8_web'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=chip8-web"
+                ],
+                "filter": {
+                    "name": "chip8_web",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'web'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=web",
+                    "--package=chip8-web"
+                ],
+                "filter": {
+                    "name": "web",
+                    "kind": "test"
                 }
             },
             "args": [],
