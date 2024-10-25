@@ -4,12 +4,9 @@ use rand::{rngs::SmallRng, RngCore, SeedableRng};
 
 use crate::{
     chip8::{
-        self,
-        ch8_types::{self, InputKey, MemoryAddress, Registers, Stack, Timer, DISPLAY_HEIGHT, DISPLAY_WIDTH, REGISTER_SIZE, STACK_SIZE, VRAM},
+        ch8_types::{InputKey, MemoryAddress, Registers, Stack, Timer, DISPLAY_HEIGHT, DISPLAY_WIDTH, REGISTER_SIZE, STACK_SIZE, VRAM},
         Ops,
-    },
-    display::{self, DisplayController, FONT},
-    memory::Memory,
+    }, display::{DisplayController, FONT}, memory::Memory
 };
 
 /// Holds the State of the emulator
@@ -35,6 +32,7 @@ pub struct AppState {
     dt: Timer,
     st: Timer,
     key_buffer: Option<InputKey>,
+    //keypad: Keypad
 }
 
 impl AppState {
@@ -54,7 +52,8 @@ impl AppState {
             vram: [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
             dt: 0,
             st: 0,
-            key_buffer: None
+            key_buffer: None,
+            //keypad: Keypad::new()
             //display: Chip8Display::default(),
         }
     }

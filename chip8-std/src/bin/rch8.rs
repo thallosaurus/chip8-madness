@@ -1,6 +1,4 @@
 use std::{fs::File, io::{self, Read}};
-
-use chip8::app::AppState;
 use chip8_std::run_rom;
 
 fn main() -> io::Result<()> {
